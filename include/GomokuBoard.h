@@ -20,6 +20,7 @@ public:
     int x;
     int y;
     PlayerOccupy player;
+    bool operator<(MoveInfo x) const;
 };
 
 constexpr size_t BOARD_SIZE = 15;

@@ -3,6 +3,13 @@
 //
 #include <GomokuBoard.h>
 
+bool MoveInfo::operator<(const MoveInfo x) const {
+    if (this->x<x.x) return true;
+    if (this->x>x.x) return false;
+    return this->y < x.y;
+}
+
+
 PlayerOccupy GomokuBoard::at(const int x, const int y) const {
     return board[x][y];
 }

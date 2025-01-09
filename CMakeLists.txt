@@ -22,6 +22,8 @@ set(PROJECT_SOURCES
         tests/judge_test.cpp
         include/SearchAgent.h
         src/ai/SearchAgent.cpp
+        include/FileOP.h
+        "src/file operations/FileOP.cpp"
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -75,3 +77,13 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 include_directories("include")
+
+qt_add_resources(GoMonte "resources.qrc"
+    PREFIX "/" FILES
+        resources/icons/GoMonte.png
+)
+
+if(WIN32)
+    set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/app_icon.rc")
+    target_sources(GoMonte PRIVATE ${APP_ICON_RESOURCE_WINDOWS})
+endif()

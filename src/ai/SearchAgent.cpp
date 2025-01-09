@@ -25,3 +25,8 @@ MCTSTree * MCTSTree::get_best_child()  {
     }
     return children[best_move];
 }
+
+void SearchAgentWorker::search_best_move(const GomokuBoard& board, PlayerOccupy AI_Player, PlayerOccupy Human_Player, PlayerOccupy Node_Player, int time) {
+
+}
+

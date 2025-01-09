@@ -44,7 +44,10 @@ public:
 class SearchAgentWorker : public QObject {
     Q_OBJECT
 public:
-    MoveInfo search_best_move(const GomokuBoard & board, PlayerOccupy AI_Player, PlayerOccupy Human_Player, PlayerOccupy Node_Player, int time = MAX_TIME);
+    explicit SearchAgentWorker(QObject *parent = nullptr) : QObject(parent) {}
+
+public slots:
+    void search_best_move(const GomokuBoard & board, PlayerOccupy AI_Player, PlayerOccupy Human_Player, PlayerOccupy Node_Player, int time = MAX_TIME);
 
 
 
