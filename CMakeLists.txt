@@ -24,6 +24,14 @@ set(PROJECT_SOURCES
         src/ai/SearchAgent.cpp
         include/FileOP.h
         "src/file operations/FileOP.cpp"
+        include/MainBoardWidget.h
+        src/widgets/MainBoardWidget.cpp
+        include/MainMenuWidget.h
+        src/widgets/MainMenuWidget.cpp
+        include/BoardCellWidget.h
+        src/widgets/BoardCellWidget.cpp
+        include/GameData.h
+        src/game/GameData.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

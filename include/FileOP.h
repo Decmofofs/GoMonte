@@ -4,5 +4,6 @@
 
 #ifndef FILEOP_H
 #define FILEOP_H
+#include <GameData.h>
 
 #endif //FILEOP_H

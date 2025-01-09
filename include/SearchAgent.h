@@ -14,11 +14,7 @@
 #include <QMutex>
 #include <chrono>
 #include <QWaitCondition>
-constexpr int MAX_DEPTH = 8;
-constexpr int MAX_SIMULATION = 1000;
-constexpr double C = 1.414;
-constexpr double EPS = std::numeric_limits<float>::min();
-constexpr int MAX_TIME = 1000; // Milliseconds
+#include <GameData.h>
 
 class MCTSTree {
 private:

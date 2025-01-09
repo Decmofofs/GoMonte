@@ -8,12 +8,8 @@
 #include <vector>
 #include <set>
 #include <utility>
+#include <GameData.h>
 
-enum class PlayerOccupy {
-    BLACK,
-    WHITE,
-    NONE
-};
 
 class MoveInfo {
 public:
@@ -23,7 +19,7 @@ public:
     bool operator<(MoveInfo x) const;
 };
 
-constexpr size_t BOARD_SIZE = 15;
+
 
 class GomokuBoard {
 
@@ -39,7 +35,7 @@ public:
     [[nodiscard]] std::set<std::pair<int,int>> get_legal_moves() const;
 
 private:
-    size_t S = BOARD_SIZE;
+    int S = BOARD_SIZE;
     int places = 0;
     std::vector<std::vector<PlayerOccupy>> board;
 };

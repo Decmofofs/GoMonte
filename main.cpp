@@ -1,13 +1,22 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <GameData.h>
+#include <GomokuBoard.h>
+#include <BoardCellWidget.h>
+#include <MainBoardWidget.h>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    QIcon appIcon(":/resources/icons/GoMonte.png");
-    //a.setWindowIcon(appIcon);
+
+
+
+    MainBoardWidget  * Board = new MainBoardWidget(nullptr, BOARD_SIZE);
     MainWindow w;
+
+    Board->setParent(&w);
+    w.set_board(Board);
     w.show();
     return a.exec();
 }
