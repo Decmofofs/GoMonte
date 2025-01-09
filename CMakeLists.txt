@@ -17,6 +17,11 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        include/GomokuBoard.h
+        src/board/GomokuBoard.cpp
+        tests/judge_test.cpp
+        include/SearchAgent.h
+        src/ai/SearchAgent.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -68,3 +73,5 @@ install(TARGETS GoMonte
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(GoMonte)
 endif()
+
+include_directories("include")
