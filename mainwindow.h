@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <MainBoardWidget.h>
+#include <SearchAgent.h>
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -17,6 +19,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void set_board(MainBoardWidget * board);
+    //void set_search_agent(QThread * thread, SearchAgentWorker * worker);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -24,5 +27,7 @@ protected:
 private:
     Ui::MainWindow *ui;
     MainBoardWidget * m_Board;
+    QThread * m_SearchAgentThread;
+    SearchAgentWorker * m_SearchAgentWorker;
 };
 #endif // MAINWINDOW_H

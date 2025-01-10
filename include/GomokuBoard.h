@@ -33,6 +33,7 @@ public:
     [[nodiscard]] int is_full() const;
     [[nodiscard]] int is_forbidden(MoveInfo move) const;
     [[nodiscard]] std::set<std::pair<int,int>> get_legal_moves() const;
+    int heuristic_evaluation(PlayerOccupy player);
 
 private:
     int S = BOARD_SIZE;

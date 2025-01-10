@@ -2,7 +2,7 @@
 // Created by Decmo on 25-1-9.
 //
 #include "BoardCellWidget.h"
-
+#include <HelperFunctions.h>
 BoardCellWidget::BoardCellWidget(QWidget *parent, int _x, int _y) : QWidget(parent), x(_x), y(_y) {
     state = PlayerOccupy::NONE;
     //setAttribute(Qt::WA_Hover, true);
@@ -28,14 +28,18 @@ void BoardCellWidget::paintEvent(QPaintEvent *event) {
 
     if (state == PlayerOccupy::BLACK) {
         painter.setBrush(Qt::black);
-        painter.drawEllipse(0, 0, width(), height());
+        painter.drawEllipse(width()/4, height()/4, width()/2, height()/2);
     } else if (state == PlayerOccupy::WHITE) {
         painter.setBrush(Qt::white);
-        painter.drawEllipse(0, 0, width(), height());
+        painter.drawEllipse(width()/4, width()/4, width()/2, height()/2);
     }
 }
 
+// TODO
 void BoardCellWidget::mousePressEvent(QMouseEvent* event) {
+    if (state != PlayerOccupy::NONE) return;
+    if (is_AI_thinking) return;
+
     emit clicked(x, y);
 }
 

@@ -16,9 +16,11 @@ public:
 
 signals:
     void cell_clicked(int x, int y);
+    void send_to_search_agent(const GomokuBoard & board);
 
 public slots:
     void handle_cell_click(int x, int y);
+    void receive_best_move(MoveInfo move);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

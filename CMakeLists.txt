@@ -32,6 +32,8 @@ set(PROJECT_SOURCES
         src/widgets/BoardCellWidget.cpp
         include/GameData.h
         src/game/GameData.cpp
+        include/HelperFunctions.h
+        src/helper/HelperFunctions.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
