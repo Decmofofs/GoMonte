@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <MainBoardWidget.h>
 #include <SearchAgent.h>
-
+#include "MainMenuWidget.h"
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -19,6 +19,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void set_board(MainBoardWidget * board);
+    void set_main_menu(MainMenuWidget * menu);
     //void set_search_agent(QThread * thread, SearchAgentWorker * worker);
 
 protected:
@@ -29,5 +30,7 @@ private:
     MainBoardWidget * m_Board;
     QThread * m_SearchAgentThread;
     SearchAgentWorker * m_SearchAgentWorker;
+
+    MainMenuWidget * m_MainMenu;
 };
 #endif // MAINWINDOW_H

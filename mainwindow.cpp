@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle("GoMonte v1.0");
 
-    setMinimumSize(1000,800);
+    setMinimumSize(1200,1000);
 }
 
 MainWindow::~MainWindow(){
@@ -26,6 +26,12 @@ void MainWindow::set_board(MainBoardWidget *board){
 
 }
 
+void MainWindow::set_main_menu(MainMenuWidget *menu){
+
+    m_MainMenu = menu;
+    //setCentralWidget(m_MainMenu);
+}
+
 void MainWindow::resizeEvent(QResizeEvent *event){
 
     QMainWindow::resizeEvent(event);
@@ -35,7 +41,12 @@ void MainWindow::resizeEvent(QResizeEvent *event){
 
     if (m_Board != nullptr){
         m_Board->setFixedSize(s, s);
-        m_Board->move((w-s)/2, (h-s)/2);
+        m_Board->move((w-s)/2+(w-s)/4, (h-s)/4);
+    }
+
+    if (m_MainMenu != nullptr){
+        m_MainMenu->setFixedSize(3*(w-s)/8,s );
+        m_MainMenu->move(3*(w-s)/16, (h-s)/4);
     }
 }
 

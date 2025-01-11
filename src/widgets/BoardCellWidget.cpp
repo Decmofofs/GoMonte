@@ -3,6 +3,7 @@
 //
 #include "BoardCellWidget.h"
 #include <HelperFunctions.h>
+#include <QMessageBox>
 BoardCellWidget::BoardCellWidget(QWidget *parent, int _x, int _y) : QWidget(parent), x(_x), y(_y) {
     state = PlayerOccupy::NONE;
     //setAttribute(Qt::WA_Hover, true);
@@ -37,6 +38,10 @@ void BoardCellWidget::paintEvent(QPaintEvent *event) {
 
 // TODO
 void BoardCellWidget::mousePressEvent(QMouseEvent* event) {
+    if (!initialized) {
+        QMessageBox::information(dynamic_cast<QWidget*>(this->parent()->parent()), "提示", "请先开始游戏！");
+        return;
+    }
     if (state != PlayerOccupy::NONE) return;
     if (game_over) return;
     if (is_AI_thinking) return;

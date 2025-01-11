@@ -23,7 +23,8 @@ GameController::~GameController() {
     delete search_agent;
 }
 
-void GameController::show_game_result() {
+void GameController::process_game_over() {
+    initialized = 0;
     QString result;
     if (game_result == 0) {
         result = "平局！";
@@ -44,7 +45,7 @@ void GameController::show_game_result() {
         }
         result += ")获胜！";
     }
-    QMessageBox::information(nullptr, "游戏结束", result);
+    QMessageBox::information(dynamic_cast<QWidget*>(this->parent()), "游戏结束", result);
 }
 
 void GameController::process_AI_response(int x, int y) {
@@ -53,7 +54,7 @@ void GameController::process_AI_response(int x, int y) {
         emit send_state_to_widget(x, y, AI_player);
         game_over = 1;
         game_result = 2;
-        show_game_result();
+        process_game_over();
         return;
     }
     game_board.set(x, y, AI_player);
@@ -77,7 +78,7 @@ void GameController::process_player_move(int x, int y) {
         game_over = 1;
 
         game_result = 1;
-        show_game_result();
+        process_game_over();
         return;
     }
     game_board.set(x, y, human_player);
@@ -107,4 +108,32 @@ void GameController::handle_player_move(int x, int y) {
 
     process_player_move(x, y);
 
+}
+
+void GameController::initialize_game() {
+    game_board = GomokuBoard();
+    game_over = 0;
+    game_result = 0;
+    is_AI_thinking = false;
+    if (radio_black_checked == 1) {
+        AI_player = PlayerOccupy::WHITE;
+        human_player = PlayerOccupy::BLACK;
+        cur_player = PlayerOccupy::BLACK;
+    }
+    else {
+        AI_player = PlayerOccupy::BLACK;
+        human_player = PlayerOccupy::WHITE;
+        cur_player = PlayerOccupy::WHITE;
+        game_board.set(7, 7, AI_player);
+    }
+    for (int i=0;i<BOARD_SIZE;i++) {
+        for (int j=0;j<BOARD_SIZE;j++) {
+            emit send_state_to_widget(i, j, game_board.at(i,j));
+        }
+    }
+    initialized = 1;
+}
+
+void GameController::restart_game() {
+    initialize_game();
 }

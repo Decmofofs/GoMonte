@@ -84,3 +84,4 @@ CMakeLists.txt.user*
 # cmake generated files
 CMakeLists.txt.user
 cmake-build-*
+./.VSCodeCounter/

@@ -23,7 +23,7 @@ public:
     void process_player_move(int x, int y);
 
     void process_forbidden_move(int x, int y);
-    void show_game_result();
+    void process_game_over();
 
 signals:
     void send_to_search_agent(const GomokuBoard & board);
@@ -33,6 +33,8 @@ signals:
 public slots:
     void receive_best_move(MoveInfo move);
     void handle_player_move(int x, int y);
+    void initialize_game();
+    void restart_game();
 
 private:
     GomokuBoard game_board;
