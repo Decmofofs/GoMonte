@@ -34,6 +34,8 @@ set(PROJECT_SOURCES
         src/game/GameData.cpp
         include/HelperFunctions.h
         src/helper/HelperFunctions.cpp
+        include/GameController.h
+        src/game/GameController.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -97,3 +99,5 @@ if(WIN32)
     set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/app_icon.rc")
     target_sources(GoMonte PRIVATE ${APP_ICON_RESOURCE_WINDOWS})
 endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")

@@ -61,19 +61,15 @@ void MainBoardWidget::draw_board(QPainter &painter) {
         painter.drawEllipse(QPoint(x, y), dot_radius, dot_radius);
     }
 }
+
+void MainBoardWidget::receive_instruction(int x, int y, PlayerOccupy state) {
+    cells[x][y]->set_state(state);
+}
 // TODO
 void MainBoardWidget::handle_cell_click(int x, int y) {
     if (is_AI_thinking) return;
-    board.set(x,y,cur_player);
-    cells[x][y]->set_state(cur_player);
-    is_AI_thinking = true;
-    emit send_to_search_agent(board);
+
     emit cell_clicked(x, y);
 }
 
-void MainBoardWidget::receive_best_move(MoveInfo move) {
-    board.set(move.x, move.y, AI_player);
-    cells[move.x][move.y]->set_state(AI_player);
-    is_AI_thinking = false;
-}
 

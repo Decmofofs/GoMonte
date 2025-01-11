@@ -7,8 +7,16 @@
 #include <random>
 #include <HelperFunctions.h>
 #include <QDebug>
+
+MCTSTree::MCTSTree(const GomokuBoard &bd, const PlayerOccupy &Node_Player, MCTSTree *parent) :
+        board(bd), Node_Player(Node_Player), parent(parent), visits(0), wins(0), loses(0) {
+    legal_moves = board.get_legal_moves();
+    legal_move_cnt = legal_moves.size();
+    is_end_state = 0;
+}
+
 int MCTSTree::is_fully_expanded() const {
-    return children.size() == board.get_legal_moves().size();
+    return children.size() == legal_move_cnt;
 }
 
 
@@ -71,42 +79,77 @@ void SearchAgentWorker::mcts_simulate(MCTSTree* node) {
     // Selection
     MCTSTree* current = node;
 
-    while (current->is_fully_expanded() && !current->children.empty()) {
+    while (current->is_fully_expanded() && !current->children.empty() && current->is_end_state == 0) {
         current = current->children[current->get_move_to_best_child(0)];
     }
+
+    if (current->is_end_state== 1) {
+        // Direct Backpropagation
+        PlayerOccupy winn = current->parent->Node_Player;
+        while (current != nullptr) {
+            current->visits ++;
+            if (current->Node_Player == winn) {
+                current->wins --;
+            } else {
+                current->wins ++;
+            }
+            current = current->parent;
+        }
+        return;
+    }
+
+    // Expansion
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    // Expansion
-    auto legal_moves = current->board.get_legal_moves();
 
     MoveInfo this_move;
-    if (!legal_moves.empty()) {
-        auto iter = legal_moves.begin();
-        std::uniform_int_distribution<> dis(0, legal_moves.size() - 1);
+    MCTSTree* new_node = nullptr;
+    if (!current->legal_moves.empty()) {
+        auto iter = current->legal_moves.begin();
+        std::uniform_int_distribution<> dis(0, current->legal_moves.size() - 1);
         std::advance(iter, dis(gen));
 
         this_move = {iter->first, iter->second, current->Node_Player};
-        current->children[this_move] = new MCTSTree(current->board, get_switched_role(current->Node_Player), current);
-        current = current->children[this_move];
-        current->board.set(this_move.x, this_move.y, this_move.player);
+        GomokuBoard tmp_board = current->board;
+        tmp_board.set(this_move.x, this_move.y, this_move.player);
+        current->children[this_move] = new MCTSTree(tmp_board, get_switched_role(current->Node_Player), current);
+        current->legal_moves.erase(iter);
+        new_node = current->children[this_move];
+
     }
 
 
     // Simulation
-    PlayerOccupy winner = PlayerOccupy::NONE, loser = PlayerOccupy::NONE; int confirm_winner = 0;
+    PlayerOccupy winner = PlayerOccupy::NONE; int confirm_winner = 0;
 
-    if (current->parent->board.check_win(this_move)) {
-        winner = current->parent->Node_Player;
-        loser = get_switched_role(winner);
+    if (new_node->parent->board.check_win(this_move)) {
+        winner = new_node->parent->Node_Player;
+
         confirm_winner = 1;
     }
 
+    if (confirm_winner) {
+        new_node->is_end_state = 1;
+        // Backpropagation
+        while (new_node != nullptr) {
+            new_node->visits ++;
+            if (winner == new_node->Node_Player) {
+                new_node->wins --;
+            } else {
+                new_node->wins ++;
+            }
+            new_node = new_node->parent;
+        }
+        return;
+    }
+
+
     int depth = MAX_DEPTH;
 
-    GomokuBoard temp_board = current->board;
+    GomokuBoard temp_board = new_node->board;
 
-    while (depth>0 && !confirm_winner) {
+    while (depth>0) {
         depth --;
         std::set<std::pair<int, int>> moves; MoveInfo move;
         moves = temp_board.get_legal_moves();
@@ -115,10 +158,10 @@ void SearchAgentWorker::mcts_simulate(MCTSTree* node) {
         auto iter = moves.begin();
         std::advance(iter, dis(gen));
 
-        move = {iter->first,iter->second,current->Node_Player};
+        move = {iter->first,iter->second,new_node->Node_Player};
         if (temp_board.check_win(move)) {
-            winner = current->Node_Player;
-            loser = get_switched_role(winner);
+            winner = new_node->Node_Player;
+
             confirm_winner = 1;
             break;
         }
@@ -130,10 +173,10 @@ void SearchAgentWorker::mcts_simulate(MCTSTree* node) {
         iter = moves.begin();
         std::advance(iter, dis2(gen));
 
-        move = {iter->first,iter->second,get_switched_role(current->Node_Player)};
+        move = {iter->first,iter->second,get_switched_role(new_node->Node_Player)};
         if (temp_board.check_win(move)) {
-            winner = get_switched_role(current->Node_Player);
-            loser = current->Node_Player;
+            winner = get_switched_role(new_node->Node_Player);
+
             confirm_winner = 1;
             break;
         }
@@ -141,25 +184,25 @@ void SearchAgentWorker::mcts_simulate(MCTSTree* node) {
     }
 
     if (!confirm_winner) {
-        int score = temp_board.heuristic_evaluation(current->Node_Player);
+        int score = temp_board.heuristic_evaluation(new_node->Node_Player);
         if (score > 0) {
-            winner = current->Node_Player;
-            loser = get_switched_role(winner);
+            winner = new_node->Node_Player;
+
         } else if (score < 0) {
-            winner = get_switched_role(current->Node_Player);
-            loser = current->Node_Player;
+            winner = get_switched_role(new_node->Node_Player);
+
         }
     }
 
     // Backpropagation
-    while (current != nullptr) {
-        current->visits ++;
-        if (current->Node_Player == winner) {
-            current->wins ++;
-        } else if (current->Node_Player == loser) {
-            current->loses ++;
+    while (new_node != nullptr) {
+        new_node->visits ++;
+        if (winner == new_node->Node_Player) {
+            new_node->wins --;
+        } else {
+            new_node->wins ++;
         }
-        current = current->parent;
+        new_node = new_node->parent;
     }
 
 

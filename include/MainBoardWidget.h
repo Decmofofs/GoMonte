@@ -16,11 +16,11 @@ public:
 
 signals:
     void cell_clicked(int x, int y);
-    void send_to_search_agent(const GomokuBoard & board);
+
 
 public slots:
     void handle_cell_click(int x, int y);
-    void receive_best_move(MoveInfo move);
+    void receive_instruction(int x, int y, PlayerOccupy state);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -29,7 +29,7 @@ private:
     int S;
     QGridLayout* layout;
     std::vector<std::vector<BoardCellWidget*>> cells;
-    GomokuBoard board;
+
 
     void draw_board(QPainter &painter);
 };

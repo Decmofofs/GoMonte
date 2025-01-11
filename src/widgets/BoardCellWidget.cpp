@@ -38,6 +38,7 @@ void BoardCellWidget::paintEvent(QPaintEvent *event) {
 // TODO
 void BoardCellWidget::mousePressEvent(QMouseEvent* event) {
     if (state != PlayerOccupy::NONE) return;
+    if (game_over) return;
     if (is_AI_thinking) return;
 
     emit clicked(x, y);

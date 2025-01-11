@@ -19,16 +19,18 @@
 class MCTSTree {
 public:
     GomokuBoard board;
-
+    std::set<std::pair<int, int>> legal_moves;
     PlayerOccupy Node_Player;
     MCTSTree * parent;
     std::map<MoveInfo, MCTSTree *> children;
     int visits;
     int wins;
     int loses;
+    int legal_move_cnt;
+    int is_end_state;
 
-    MCTSTree(const GomokuBoard & board, const PlayerOccupy & Node_Player, MCTSTree * parent = nullptr) :
-           board(board), Node_Player(Node_Player), parent(parent), visits(0), wins(0), loses(0) {}
+    MCTSTree(const GomokuBoard & board, const PlayerOccupy & Node_Player, MCTSTree * parent = nullptr);
+
 
     int is_fully_expanded() const;
 

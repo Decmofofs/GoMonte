@@ -3,6 +3,7 @@
 //
 #include <GomokuBoard.h>
 #include <HelperFunctions.h>
+#include <QDebug>
 bool MoveInfo::operator<(const MoveInfo x) const {
     if (this->x<x.x) return true;
     if (this->x>x.x) return false;
@@ -34,56 +35,28 @@ int GomokuBoard::reset() {
 }
 
 int GomokuBoard::check_win(const MoveInfo move) const {
-    const int x = move.x;
-    const int y = move.y;
-    const PlayerOccupy state = move.player;
-    int count = 0;
-    int i, j;
 
-    // Check horizontal
-    for (i = x - 4; i <= x + 4; i++) {
-        if (i < 0 || i >= S) continue;
-        if (board[i][y] == state) {
-            count++;
-            if (count == 5) return 1;
-        } else {
-            count = 0;
+
+    int dir[][2] = {{1,0},{0,1},{1,1},{1,-1}};
+
+    int r = move.x, c = move.y;
+
+    for (int i=0;i<4;i++) {
+        int cnt = 1;
+        int nr = r + dir[i][0], nc = c + dir[i][1];
+        while (nr>=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == move.player) {
+            cnt++;
+            nr += dir[i][0];
+            nc += dir[i][1];
         }
-    }
-
-    // Check vertical
-    count = 0;
-    for (j = y - 4; j <= y + 4; j++) {
-        if (j < 0 || j >= S) continue;
-        if (board[x][j] == state) {
-            count++;
-            if (count == 5) return 1;
-        } else {
-            count = 0;
+        nr = r - dir[i][0], nc = c - dir[i][1];
+        while (nr>=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == move.player) {
+            cnt++;
+            nr -= dir[i][0];
+            nc -= dir[i][1];
         }
-    }
-
-    // Check diagonal
-    count = 0;
-    for (i = x - 4, j = y - 4; i <= x + 4; i++, j++) {
-        if (i < 0 || i >= S || j < 0 || j >= S) continue;
-        if (board[i][j] == state) {
-            count++;
-            if (count == 5) return 1;
-        } else {
-            count = 0;
-        }
-    }
-
-    // Check anti-diagonal
-    count = 0;
-    for (i = x - 4, j = y + 4; i <= x + 4; i++, j--) {
-        if (i < 0 || i >= S || j < 0 || j >= S) continue;
-        if (board[i][j] == state) {
-            count++;
-            if (count == 5) return 1;
-        } else {
-            count = 0;
+        if (cnt >= 5) {
+            return 1;
         }
     }
 
@@ -162,7 +135,10 @@ int GomokuBoard::heuristic_evaluation(PlayerOccupy player) {
                 if (count == 2) cnt_pts = 10;
                 if (count == 3) cnt_pts = 100;
                 if (count == 4) cnt_pts = 1000;
-
+                if (count == 4 && alive == 2) {
+                    point_score += 10000000;
+                }
+                else
                 point_score += alive_pts*cnt_pts;
 
             }
