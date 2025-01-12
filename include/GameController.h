@@ -8,6 +8,8 @@
 #include <QObject>
 #include <QThread>
 #include <QMessageBox>
+
+#include "FileOP.h"
 #include "GameData.h"
 #include "MainBoardWidget.h"
 #include "GomokuBoard.h"
@@ -28,6 +30,8 @@ public:
 signals:
     void send_to_search_agent(const GomokuBoard & board);
     void send_state_to_widget(int x, int y, PlayerOccupy state);
+    void send_load_game(const QString & file_path);
+    void send_save_game(const QString & file_path, const GameSaver & saved_game);
 
 
 public slots:
@@ -37,6 +41,11 @@ public slots:
     void restart_game();
     void undo_move();
     void redo_move();
+    void save_game();
+    void load_game();
+    void handle_save_result(bool success);
+    void handle_load_result(bool success, const GameSaver & saved_game);
+
 
 private:
     GameSaver game_saver;
@@ -46,6 +55,7 @@ private:
     QThread * search_thread;
     QThread * file_thread;
     SearchAgentWorker * search_agent;
+    FileOPWorker * file_op;
 
     MainBoardWidget * board_widget;
 };

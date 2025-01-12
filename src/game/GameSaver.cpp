@@ -2,6 +2,7 @@
 // Created by Decmo on 25-1-12.
 //
 #include "GameSaver.h"
+#include "HelperFunctions.h"
 #include <QDebug>
 GameSaver::GameSaver() {
     savedMoveListPtr = -1;
@@ -26,6 +27,7 @@ void GameSaver::add_move(MoveInfo move) {
     savedMoveList.push_back(move);
     savedMoveListPtr++;
     savedBoard.set(move.x, move.y, move.player);
+    savedCurPlayer = get_switched_role(savedCurPlayer);
 }
 
 MoveInfo GameSaver::undo_move() {
@@ -37,6 +39,7 @@ MoveInfo GameSaver::undo_move() {
     qInfo() << savedMoveListPtr;
     savedMoveListPtr--;
     savedBoard.set(move.x, move.y, PlayerOccupy::NONE);
+    savedCurPlayer = get_switched_role(savedCurPlayer);
     return move;
 }
 
@@ -48,6 +51,7 @@ MoveInfo GameSaver::redo_move() {
     savedMoveListPtr++;
     MoveInfo move = savedMoveList[savedMoveListPtr];
     savedBoard.set(move.x, move.y, move.player);
+    savedCurPlayer = get_switched_role(savedCurPlayer);
     return move;
 }
 
@@ -57,4 +61,64 @@ int GameSaver::get_savedMoveListPtr() const {
 
 int GameSaver::get_savedMoveListSize() const {
     return savedMoveList.size();
+}
+
+int GameSaver::save_to_file(const QString & file_path) const {
+    QFile file(file_path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qInfo() << "Failed to open file for writing";
+        return 0;
+    }
+
+    QJsonObject save;
+    save["savedBoard"] = savedBoard.to_json();
+
+    QJsonArray savedMoveListArray;
+    for (const auto & move : savedMoveList) {
+        savedMoveListArray.append(move.to_json());
+    }
+
+    save["savedMoveList"] = savedMoveListArray;
+    save["savedMoveListPtr"] = savedMoveListPtr;
+    save["savedCurPlayer"] = static_cast<int>(savedCurPlayer);
+    save["savedAIPlayer"] = static_cast<int>(savedAIPlayer);
+    save["savedHumanPlayer"] = static_cast<int>(savedHumanPlayer);
+
+    QJsonDocument doc(save);
+    file.write(doc.toJson(QJsonDocument::Indented));
+    file.close();
+
+    return 1;
+}
+
+int GameSaver::load_from_file(const QString & file_path) {
+    QFile file(file_path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qInfo() << "Failed to open file for reading";
+        return 0;
+    }
+
+    QByteArray savedData = file.readAll();
+    file.close();
+    QJsonDocument doc(QJsonDocument::fromJson(savedData));
+
+    if (doc.isNull() || doc.isEmpty()) {
+        qInfo() << "Failed to parse JSON";
+
+        return 0;
+    }
+
+    QJsonObject save = doc.object();
+    savedBoard = GomokuBoard::json_to_gomoku_board(save["savedBoard"].toObject());
+    savedMoveList = std::vector<MoveInfo>();
+    QJsonArray savedMoveListArray = save["savedMoveList"].toArray();
+    for (const auto & move : savedMoveListArray) {
+        savedMoveList.push_back(MoveInfo::json_to_move_info(move.toObject()));
+    }
+    savedMoveListPtr = save["savedMoveListPtr"].toInt();
+    savedCurPlayer = static_cast<PlayerOccupy>(save["savedCurPlayer"].toInt());
+    savedAIPlayer = static_cast<PlayerOccupy>(save["savedAIPlayer"].toInt());
+    savedHumanPlayer = static_cast<PlayerOccupy>(save["savedHumanPlayer"].toInt());
+
+    return 1;
 }

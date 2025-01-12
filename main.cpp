@@ -22,6 +22,10 @@ int main(int argc, char *argv[])
     QObject::connect(MainMenu, &MainMenuWidget::restart_game, gameController, &GameController::initialize_game);
     QObject::connect(MainMenu, &MainMenuWidget::undo, gameController, &GameController::undo_move);
     QObject::connect(MainMenu, &MainMenuWidget::redo, gameController, &GameController::redo_move);
+    QObject::connect(MainMenu, &MainMenuWidget::save, gameController, &GameController::save_game);
+    QObject::connect(MainMenu, &MainMenuWidget::load, gameController, &GameController::load_game);
+
+    qDebug() << QCoreApplication::applicationDirPath();
 
     w.set_board(Board);
     w.set_main_menu(MainMenu);

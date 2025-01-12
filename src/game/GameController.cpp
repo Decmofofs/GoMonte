@@ -5,15 +5,29 @@
 #include "GameController.h"
 #include "SearchAgent.h"
 #include <iostream>
+#include <QInputDialog>
+#include <QCoreApplication>
+#include <QMessageBox>
+#include <QDir>
+#include <SaveSelectionDialog.h>
 GameController::GameController(QObject *parent, MainBoardWidget * bd_widget) : QObject(parent), board_widget(bd_widget) {
     search_thread = new QThread();
     search_agent = new SearchAgentWorker();
     search_agent->moveToThread(search_thread);
     search_thread->start();
+
+    file_thread = new QThread();
+    file_op = new FileOPWorker();
+    file_op->moveToThread(file_thread);
+    file_thread->start();
     connect(this, &GameController::send_to_search_agent, search_agent, &SearchAgentWorker::search_best_move);
     connect(search_agent, &SearchAgentWorker::send_best_move, this, &GameController::receive_best_move);
     connect(board_widget, &MainBoardWidget::cell_clicked, this, &GameController::handle_player_move);
     connect(this, &GameController::send_state_to_widget, board_widget, &MainBoardWidget::receive_instruction);
+    connect(this,&GameController::send_load_game, file_op, &FileOPWorker::load_game);
+    connect(this, &GameController::send_save_game, file_op, &FileOPWorker::save_game);
+    connect(file_op, &FileOPWorker::finish_load, this, &GameController::handle_load_result);
+    connect(file_op, &FileOPWorker::finish_save, this, &GameController::handle_save_result);
 }
 
 GameController::~GameController() {
@@ -21,6 +35,10 @@ GameController::~GameController() {
     search_thread->wait();
     delete search_thread;
     delete search_agent;
+    file_thread->quit();
+    file_thread->wait();
+    delete file_thread;
+    delete file_op;
 }
 
 void GameController::process_game_over() {
@@ -178,4 +196,87 @@ void GameController::redo_move() {
     emit send_state_to_widget(human_next_move.x, human_next_move.y, human_next_move.player);
     emit send_state_to_widget(AI_next_move.x, AI_next_move.y, AI_next_move.player);
 
+}
+
+void GameController::save_game() {
+
+    if (game_over) return;
+    if (is_AI_thinking) return;
+    is_file_op_finished = 0;
+
+
+    QString app_dir = QCoreApplication::applicationDirPath();
+    QString save_dir = app_dir + "/" + "saves";
+    if (!QDir(save_dir).exists()) {
+        QDir().mkdir(save_dir);
+    }
+    QString default_save_name = "save_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+    QString filename = QInputDialog::getText(dynamic_cast<QWidget*>(this->parent()), "保存游戏", "请输入保存文件名", QLineEdit::Normal, default_save_name);
+    if (filename.isEmpty()) {
+        is_file_op_finished = 1;
+        return;
+    }
+    QString file_path = save_dir + "/" + filename+".json";
+
+    if (QFile::exists(file_path)) {
+        QMessageBox::StandardButton reply = QMessageBox::question(dynamic_cast<QWidget*>(this->parent()), "文件已存在", "文件已存在，是否覆盖？", QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::No) {
+            is_file_op_finished = 1;
+            return;
+        }
+    }
+
+    emit send_save_game(file_path, game_saver);
+}
+
+void GameController::load_game() {
+    if (game_over) return;
+    if (is_AI_thinking) return;
+    is_file_op_finished = 0;
+
+    QString app_dir = QCoreApplication::applicationDirPath();
+    QString save_dir = app_dir + "/" + "saves";
+    if (!QDir(save_dir).exists()) {
+        QDir().mkdir(save_dir);
+    }
+
+    SaveSelectionDialog * dialog = new SaveSelectionDialog(save_dir, dynamic_cast<QWidget*>(this->parent()));
+    dialog->exec();
+    QString selected_file = dialog->get_selected_file();
+    if (selected_file.isEmpty()) {
+        is_file_op_finished = 1;
+        return;
+    }
+    QString file_path = save_dir + "/" + selected_file;
+    emit send_load_game(file_path);
+
+}
+
+void GameController::handle_save_result(bool success) {
+    if (success) {
+        QMessageBox::information(dynamic_cast<QWidget*>(this->parent()), "保存成功", "保存成功！");
+    } else {
+        QMessageBox::warning(dynamic_cast<QWidget*>(this->parent()), "保存失败", "保存失败！");
+    }
+    is_file_op_finished = 1;
+}
+
+void GameController::handle_load_result(bool success, const GameSaver & saved_game) {
+    if (success) {
+        QMessageBox::information(dynamic_cast<QWidget*>(this->parent()), "加载成功", "加载成功！");
+        game_board = saved_game.savedBoard;
+        cur_player = saved_game.savedCurPlayer;
+        AI_player = saved_game.savedAIPlayer;
+        human_player = saved_game.savedHumanPlayer;
+        game_saver = saved_game;
+        for (int i=0;i<BOARD_SIZE;i++) {
+            for (int j=0;j<BOARD_SIZE;j++) {
+                emit send_state_to_widget(i, j, game_board.at(i,j));
+            }
+        }
+        initialized = 1;
+    } else {
+        QMessageBox::warning(dynamic_cast<QWidget*>(this->parent()), "加载失败", "加载失败！");
+    }
+    is_file_op_finished = 1;
 }

@@ -4,11 +4,7 @@
 #include <GomokuBoard.h>
 #include <HelperFunctions.h>
 #include <QDebug>
-bool MoveInfo::operator<(const MoveInfo x) const {
-    if (this->x<x.x) return true;
-    if (this->x>x.x) return false;
-    return this->y < x.y;
-}
+
 
 
 PlayerOccupy GomokuBoard::at(const int x, const int y) const {
@@ -16,9 +12,14 @@ PlayerOccupy GomokuBoard::at(const int x, const int y) const {
 }
 
 int GomokuBoard::set(const int x, const int y, const PlayerOccupy state) {
-    if (board[x][y] == PlayerOccupy::NONE) {
+    if (board[x][y] == PlayerOccupy::NONE && state != PlayerOccupy::NONE) {
         board[x][y] = state;
         places++;
+        return 0;
+    }
+    else if (board[x][y] != PlayerOccupy::NONE && state == PlayerOccupy::NONE) {
+        board[x][y] = state;
+        places--;
         return 0;
     }
     return -1;
@@ -33,6 +34,37 @@ int GomokuBoard::reset() {
     places = 0;
     return 0;
 }
+
+QJsonObject GomokuBoard::to_json() const {
+    QJsonObject ret;
+    ret["S"] = S;
+    ret["places"] = places;
+    QJsonArray arr;
+    for (int i=0;i<S;i++){
+        QJsonArray row;
+        for (int j=0;j<S;j++){
+            row.append(static_cast<int>(board[i][j]));
+        }
+        arr.append(row);
+    }
+    ret["board"] = arr;
+    return ret;
+}
+
+GomokuBoard GomokuBoard::json_to_gomoku_board(const QJsonObject& obj) {
+    GomokuBoard ret;
+    ret.S = obj["S"].toInt();
+    ret.places = obj["places"].toInt();
+    QJsonArray arr = obj["board"].toArray();
+    for (int i=0;i<ret.S;i++){
+        QJsonArray row = arr[i].toArray();
+        for (int j=0;j<ret.S;j++){
+            ret.board[i][j] = static_cast<PlayerOccupy>(row[j].toInt());
+        }
+    }
+    return ret;
+}
+
 
 int GomokuBoard::check_win(const MoveInfo move) const {
 

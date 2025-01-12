@@ -7,7 +7,7 @@
 
 #include <vector>
 
-
+#include <QJsonObject>
 
 inline int dot_radius = 3;
 inline int BOARD_SIZE = 15;
@@ -17,9 +17,9 @@ inline double C = 1.414;
 inline int MAX_TIME = 10000; // Milliseconds
 
 enum class PlayerOccupy {
-    BLACK,
-    WHITE,
-    NONE
+    BLACK = 2,
+    WHITE = 1,
+    NONE = 0
 };
 
 
@@ -29,6 +29,8 @@ public:
     int y;
     PlayerOccupy player;
     bool operator<(MoveInfo x) const;
+    QJsonObject to_json() const;
+    static MoveInfo json_to_move_info(const QJsonObject & obj);
 };
 
 inline PlayerOccupy cur_player = PlayerOccupy::BLACK;
@@ -42,5 +44,5 @@ inline int initialized = 0;
 
 inline int radio_black_checked = 1;
 
-
+inline int is_file_op_finished = 1;
 #endif //GAMEDATA_H

@@ -7,7 +7,10 @@
 
 #include "GameData.h"
 #include "GomokuBoard.h"
-
+#include <QFile>
+#include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
 class GameSaver {
 public:
     explicit GameSaver();
@@ -18,8 +21,10 @@ public:
     int get_savedMoveListPtr() const;
     int get_savedMoveListSize() const;
 
+    int save_to_file(const QString & file_path) const;
+    int load_from_file(const QString & file_path);
 
-private:
+public:
     GomokuBoard savedBoard;
     std::vector<MoveInfo> savedMoveList;
     int savedMoveListPtr;
