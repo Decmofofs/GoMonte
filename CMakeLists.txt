@@ -36,6 +36,8 @@ set(PROJECT_SOURCES
         src/helper/HelperFunctions.cpp
         include/GameController.h
         src/game/GameController.cpp
+        include/GameSaver.h
+        src/game/GameSaver.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

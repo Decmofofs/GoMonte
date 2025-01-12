@@ -8,16 +8,10 @@
 #include <vector>
 #include <set>
 #include <utility>
-#include <GameData.h>
+#include "GameData.h"
 
 
-class MoveInfo {
-public:
-    int x;
-    int y;
-    PlayerOccupy player;
-    bool operator<(MoveInfo x) const;
-};
+
 
 
 
@@ -40,5 +34,7 @@ private:
     int places = 0;
     std::vector<std::vector<PlayerOccupy>> board;
 };
+
+
 
 #endif //GOMOKUBOARD_H

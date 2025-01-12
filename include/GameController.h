@@ -12,7 +12,7 @@
 #include "MainBoardWidget.h"
 #include "GomokuBoard.h"
 #include "SearchAgent.h"
-
+#include "GameSaver.h"
 class GameController : public QObject {
     Q_OBJECT
 
@@ -35,9 +35,14 @@ public slots:
     void handle_player_move(int x, int y);
     void initialize_game();
     void restart_game();
+    void undo_move();
+    void redo_move();
 
 private:
+    GameSaver game_saver;
     GomokuBoard game_board;
+    std::vector<MoveInfo> move_list;
+    int move_list_ptr;
     QThread * search_thread;
     QThread * file_thread;
     SearchAgentWorker * search_agent;

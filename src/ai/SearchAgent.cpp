@@ -60,6 +60,7 @@ int MCTSTree::delete_tree() {
 void SearchAgentWorker::search_best_move(const GomokuBoard& board) {
     auto start_time = std::chrono::high_resolution_clock::now();
     auto end_time = start_time + std::chrono::milliseconds(MAX_TIME-50);
+
     MCTSTree * root = new MCTSTree(board,AI_player);
 
     std::vector<MoveInfo> ret;
@@ -73,6 +74,7 @@ void SearchAgentWorker::search_best_move(const GomokuBoard& board) {
     root->delete_tree();
 
     emit send_best_move(best_move);
+    qInfo() << (std::chrono::high_resolution_clock::now() - start_time)/static_cast<double>(1000000000);
 }
 
 void SearchAgentWorker::mcts_simulate(MCTSTree* node) {

@@ -62,6 +62,7 @@ void GameController::process_AI_response(int x, int y) {
         game_over = 1;
         game_result = 0;
     }
+    game_saver.add_move({x,y,AI_player});
     emit send_state_to_widget(x, y, AI_player);
 }
 
@@ -87,7 +88,7 @@ void GameController::process_player_move(int x, int y) {
         game_result = 0;
     }
 
-
+    game_saver.add_move({x,y,human_player});
 
     emit send_state_to_widget(x, y, human_player);
     emit send_to_search_agent(game_board);
@@ -132,8 +133,49 @@ void GameController::initialize_game() {
         }
     }
     initialized = 1;
+    game_saver = GameSaver();
 }
 
 void GameController::restart_game() {
     initialize_game();
+}
+
+void GameController::undo_move() {
+    if (game_over) return;
+    if (is_AI_thinking) return;
+
+    if (game_saver.get_savedMoveListPtr() == -1) return;
+    if (game_saver.get_savedMoveListSize() < 2) return;
+
+    MoveInfo AI_last_move = game_saver.undo_move();
+    MoveInfo human_last_move = game_saver.undo_move();
+
+    if (AI_last_move.player == PlayerOccupy::NONE) return;
+    if (human_last_move.player == PlayerOccupy::NONE) return;
+
+    game_board.set(AI_last_move.x, AI_last_move.y, PlayerOccupy::NONE);
+    game_board.set(human_last_move.x, human_last_move.y, PlayerOccupy::NONE);
+
+    emit send_state_to_widget(AI_last_move.x, AI_last_move.y, PlayerOccupy::NONE);
+    emit send_state_to_widget(human_last_move.x, human_last_move.y, PlayerOccupy::NONE);
+}
+
+void GameController::redo_move() {
+    if (game_over) return;
+    if (is_AI_thinking) return;
+
+    if (game_saver.get_savedMoveListPtr() == game_saver.get_savedMoveListSize()-1) return;
+
+    MoveInfo human_next_move = game_saver.redo_move();
+    MoveInfo AI_next_move = game_saver.redo_move();
+
+    if (human_next_move.player == PlayerOccupy::NONE) return;
+    if (AI_next_move.player == PlayerOccupy::NONE) return;
+
+    game_board.set(human_next_move.x, human_next_move.y, human_next_move.player);
+    game_board.set(AI_next_move.x, AI_next_move.y, AI_next_move.player);
+
+    emit send_state_to_widget(human_next_move.x, human_next_move.y, human_next_move.player);
+    emit send_state_to_widget(AI_next_move.x, AI_next_move.y, AI_next_move.player);
+
 }

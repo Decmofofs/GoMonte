@@ -4,9 +4,10 @@
 
 #ifndef GAMEDATA_H
 #define GAMEDATA_H
-#include <limits>
-#include <utility>
-#include <cstddef>
+
+#include <vector>
+
+
 
 inline int dot_radius = 3;
 inline int BOARD_SIZE = 15;
@@ -21,6 +22,15 @@ enum class PlayerOccupy {
     NONE
 };
 
+
+class MoveInfo {
+public:
+    int x;
+    int y;
+    PlayerOccupy player;
+    bool operator<(MoveInfo x) const;
+};
+
 inline PlayerOccupy cur_player = PlayerOccupy::BLACK;
 inline PlayerOccupy AI_player = PlayerOccupy::WHITE;
 inline PlayerOccupy human_player = PlayerOccupy::BLACK;
@@ -31,4 +41,6 @@ inline int game_result; // 0: draw, 1: black win, 2: white win
 inline int initialized = 0;
 
 inline int radio_black_checked = 1;
+
+
 #endif //GAMEDATA_H
