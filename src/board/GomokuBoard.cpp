@@ -22,6 +22,7 @@ int GomokuBoard::set(const int x, const int y, const PlayerOccupy state) {
         places--;
         return 0;
     }
+
     return -1;
 }
 

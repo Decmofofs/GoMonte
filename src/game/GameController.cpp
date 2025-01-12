@@ -167,7 +167,14 @@ void GameController::undo_move() {
 
     MoveInfo AI_last_move = game_saver.undo_move();
     MoveInfo human_last_move = game_saver.undo_move();
-
+    // for (int i=0;i<BOARD_SIZE;i++) {
+    //     QString output;
+    //     for (int j=0;j<BOARD_SIZE;j++) {
+    //         auto m = game_saver.savedBoard.at(i,j);
+    //         output += QString::number((int)m);
+    //     }
+    //     qInfo() << output;
+    // }
     if (AI_last_move.player == PlayerOccupy::NONE) return;
     if (human_last_move.player == PlayerOccupy::NONE) return;
 
@@ -225,7 +232,15 @@ void GameController::save_game() {
             return;
         }
     }
-
+    // qInfo() << "Saved Board Status:";
+    // for (int i=0;i<BOARD_SIZE;i++) {
+    //     QString output;
+    //     for (int j=0;j<BOARD_SIZE;j++) {
+    //         auto m = game_saver.savedBoard.at(i,j);
+    //         output += QString::number((int)m);
+    //     }
+    //     qInfo() << output;
+    // }
     emit send_save_game(file_path, game_saver);
 }
 
