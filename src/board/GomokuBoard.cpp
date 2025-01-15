@@ -4,7 +4,7 @@
 #include <GomokuBoard.h>
 #include <HelperFunctions.h>
 #include <QDebug>
-
+#include <unordered_set>
 
 
 PlayerOccupy GomokuBoard::at(const int x, const int y) const {
@@ -70,6 +70,8 @@ GomokuBoard GomokuBoard::json_to_gomoku_board(const QJsonObject& obj) {
 int GomokuBoard::check_win(const MoveInfo move) const {
 
 
+    if (move.player == PlayerOccupy::NONE) return 0;
+
     int dir[][2] = {{1,0},{0,1},{1,1},{1,-1}};
 
     int r = move.x, c = move.y;
@@ -108,7 +110,7 @@ int GomokuBoard::is_forbidden(const MoveInfo move) const {
 }
 
 std::set<std::pair<int, int>> GomokuBoard::get_legal_moves() const {
-    std::set<std::pair<int, int>> legal_moves;
+    std::set<std::pair<int, int>> legal_moves = {{}};
     for (int i=0;i<S;i++){
         for (int j=0;j<S;j++){
             if (board[i][j] != PlayerOccupy::NONE) {

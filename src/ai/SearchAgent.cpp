@@ -1,212 +1,120 @@
-//
-// Created by Decmo on 25-1-9.
-//
-#include <cmath>
-#include <SearchAgent.h>
-#include <stack>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <map>
+#include <utility>
+#include <algorithm> // For std::min, std::max
+#include <iterator>  // For std::advance
+#include <atomic>    // If you want atomic counters, etc.
+#include "GameData.h"
+#include "SearchAgent.h"
 #include <random>
-#include <HelperFunctions.h>
-#include <QDebug>
 
-MCTSTree::MCTSTree(const GomokuBoard &bd, const PlayerOccupy &Node_Player, MCTSTree *parent) :
-        board(bd), Node_Player(Node_Player), parent(parent), visits(0), wins(0), loses(0) {
-    legal_moves = board.get_legal_moves();
-    legal_move_cnt = legal_moves.size();
-    is_end_state = 0;
+inline int random_int(int min_val, int max_val) {
+    static thread_local std::mt19937 engine(std::random_device{}());
+    std::uniform_int_distribution<int> dist(min_val, max_val);
+    return dist(engine);
 }
 
-int MCTSTree::is_fully_expanded() const {
-    return children.size() == legal_move_cnt;
-}
+void SearchAgentWorker::search_best_move(const GomokuBoard &board)
+{
+
+    std::map<std::pair<int, int>, int> move_scores;
+
+    std::mutex move_scores_mutex;
+
+    const unsigned num_threads = std::max(1u, std::thread::hardware_concurrency())-1;
+
+    const int chunk_size = MAX_SIMULATION / num_threads;
 
 
-MoveInfo MCTSTree::get_move_to_best_child(const int type)  {
-    double best_score = -std::numeric_limits<double>::infinity();
-    MoveInfo best_move{};
-    for (const auto & [fst, snd] : children) {
-        if (snd->visits == 0) return fst;
+    auto worker_func = [&](int start, int end)
+    {
+        // Local map for this thread
+        std::map<std::pair<int, int>, int> local_scores;
 
-        const double exploitation = static_cast<double>(snd->wins) / snd->visits;
-        const double exploration = type? 0:C * sqrt(log(visits) / snd->visits);
-        const double score = exploitation + exploration;
-        if (score > best_score) {
-            best_score = score;
-            best_move = fst;
-        }
-    }
-    return best_move;
-}
+        for (int i = start; i < end; ++i)
+        {
+            GomokuBoard sim_board = board;
+            PlayerOccupy sim_player = AI_player;
 
-int MCTSTree::delete_tree() {
-    std::stack<MCTSTree*> stack;
-    stack.push(this);
+            int confirm = 0;
+            std::pair<int, int> move{-1, -1};
 
-    while (!stack.empty()) {
-        MCTSTree* node = stack.top();
-        stack.pop();
+            for (int d = 0; d < 60; d++)
+            {
+                auto possible_moves = sim_board.get_legal_moves();
+                if (possible_moves.empty())
+                    break;
 
-        if (node != nullptr) {
-            for (const auto& [fst, snd] : node->children) {
-                stack.push(snd);
+                auto move_it = possible_moves.begin();
+                std::advance(move_it, random_int(0, static_cast<int>(possible_moves.size()) - 1));
+                move = *move_it;
+
+                sim_board.set(move.first, move.second, sim_player);
+
+                if (sim_board.check_win({ move.first, move.second, human_player }))
+                {
+                    confirm = 1;
+                    break;
+                }
+                if (sim_board.check_win({ move.first, move.second, AI_player }))
+                {
+                    confirm = 1;
+                    break;
+                }
+
+                sim_player = (sim_player == PlayerOccupy::BLACK)
+                           ? PlayerOccupy::WHITE
+                           : PlayerOccupy::BLACK;
             }
-            delete node;
-        }
 
-    }
-
-    return 0;
-}
-
-void SearchAgentWorker::search_best_move(const GomokuBoard& board) {
-    auto start_time = std::chrono::high_resolution_clock::now();
-    auto end_time = start_time + std::chrono::milliseconds(MAX_TIME-50);
-
-    MCTSTree * root = new MCTSTree(board,AI_player);
-
-    std::vector<MoveInfo> ret;
-
-    for (int i=0;i<MAX_SIMULATION;i++) {
-        if (std::chrono::high_resolution_clock::now() > end_time) break;
-        mcts_simulate(root);
-    }
-
-    MoveInfo best_move = root->get_move_to_best_child(1);
-    root->delete_tree();
-
-    emit send_best_move(best_move);
-    qInfo() << (std::chrono::high_resolution_clock::now() - start_time)/static_cast<double>(1000000000);
-}
-
-void SearchAgentWorker::mcts_simulate(MCTSTree* node) {
-    // Selection
-    MCTSTree* current = node;
-
-    while (current->is_fully_expanded() && !current->children.empty() && current->is_end_state == 0) {
-        current = current->children[current->get_move_to_best_child(0)];
-    }
-
-    if (current->is_end_state== 1) {
-        // Direct Backpropagation
-        PlayerOccupy winn = current->parent->Node_Player;
-        while (current != nullptr) {
-            current->visits ++;
-            if (current->Node_Player == winn) {
-                current->wins --;
-            } else {
-                current->wins ++;
+            if (confirm == 1)
+            {
+                local_scores[move] += 1;
             }
-            current = current->parent;
         }
-        return;
-    }
 
-    // Expansion
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-
-    MoveInfo this_move;
-    MCTSTree* new_node = nullptr;
-    if (!current->legal_moves.empty()) {
-        auto iter = current->legal_moves.begin();
-        std::uniform_int_distribution<> dis(0, current->legal_moves.size() - 1);
-        std::advance(iter, dis(gen));
-
-        this_move = {iter->first, iter->second, current->Node_Player};
-        GomokuBoard tmp_board = current->board;
-        tmp_board.set(this_move.x, this_move.y, this_move.player);
-        current->children[this_move] = new MCTSTree(tmp_board, get_switched_role(current->Node_Player), current);
-        current->legal_moves.erase(iter);
-        new_node = current->children[this_move];
-
-    }
-
-
-    // Simulation
-    PlayerOccupy winner = PlayerOccupy::NONE; int confirm_winner = 0;
-
-    if (new_node->parent->board.check_win(this_move)) {
-        winner = new_node->parent->Node_Player;
-
-        confirm_winner = 1;
-    }
-
-    if (confirm_winner) {
-        new_node->is_end_state = 1;
-        // Backpropagation
-        while (new_node != nullptr) {
-            new_node->visits ++;
-            if (winner == new_node->Node_Player) {
-                new_node->wins --;
-            } else {
-                new_node->wins ++;
+        {
+            std::lock_guard<std::mutex> lock(move_scores_mutex);
+            for (auto &kv : local_scores)
+            {
+                move_scores[kv.first] += kv.second;
             }
-            new_node = new_node->parent;
         }
-        return;
+    };
+
+    std::vector<std::thread> threads;
+    threads.reserve(num_threads);
+
+    int start_index = 0;
+    for (unsigned t = 0; t < num_threads; ++t)
+    {
+        int simulations_for_this_thread = chunk_size;
+
+
+
+        int end_index = start_index + simulations_for_this_thread;
+        threads.emplace_back(worker_func, start_index, end_index);
+
+        start_index = end_index;
     }
 
-
-    int depth = MAX_DEPTH;
-
-    GomokuBoard temp_board = new_node->board;
-
-    while (depth>0) {
-        depth --;
-        std::set<std::pair<int, int>> moves; MoveInfo move;
-        moves = temp_board.get_legal_moves();
-        if (moves.empty()) break;
-        std::uniform_int_distribution<> dis(0, moves.size() - 1);
-        auto iter = moves.begin();
-        std::advance(iter, dis(gen));
-
-        move = {iter->first,iter->second,new_node->Node_Player};
-        if (temp_board.check_win(move)) {
-            winner = new_node->Node_Player;
-
-            confirm_winner = 1;
-            break;
-        }
-        temp_board.set(move.x, move.y, move.player);
-
-        moves = temp_board.get_legal_moves();
-        if (moves.empty()) break;
-        std::uniform_int_distribution<> dis2(0, moves.size() - 1);
-        iter = moves.begin();
-        std::advance(iter, dis2(gen));
-
-        move = {iter->first,iter->second,get_switched_role(new_node->Node_Player)};
-        if (temp_board.check_win(move)) {
-            winner = get_switched_role(new_node->Node_Player);
-
-            confirm_winner = 1;
-            break;
-        }
-        temp_board.set(move.x, move.y, move.player);
+    for (auto &th : threads)
+    {
+        th.join();
     }
 
-    if (!confirm_winner) {
-        int score = temp_board.heuristic_evaluation(new_node->Node_Player);
-        if (score > 0) {
-            winner = new_node->Node_Player;
-
-        } else if (score < 0) {
-            winner = get_switched_role(new_node->Node_Player);
-
+    int best_score = -1;
+    std::pair<int, int> best_move = { -1, -1 };
+    for (auto &ele : move_scores)
+    {
+        if (ele.second > best_score)
+        {
+            best_score = ele.second;
+            best_move = ele.first;
         }
     }
 
-    // Backpropagation
-    while (new_node != nullptr) {
-        new_node->visits ++;
-        if (winner == new_node->Node_Player) {
-            new_node->wins --;
-        } else {
-            new_node->wins ++;
-        }
-        new_node = new_node->parent;
-    }
-
-
-
+    emit send_best_move({best_move.first, best_move.second, AI_player});
 }

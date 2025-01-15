@@ -40,6 +40,9 @@ set(PROJECT_SOURCES
         src/game/GameSaver.cpp
         include/SaveSelectionDialog.h
         src/widgets/SaveSelectionDialog.cpp
+        include/MCTSTree.h
+        src/ai/MCTSTree.cpp
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

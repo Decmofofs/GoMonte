@@ -12,7 +12,7 @@
 inline int dot_radius = 3;
 inline int BOARD_SIZE = 15;
 inline int MAX_DEPTH = 30;
-inline int MAX_SIMULATION = 3000;
+inline int MAX_SIMULATION = 30000;
 inline double C = 1.414;
 inline int MAX_TIME = 10000; // Milliseconds
 

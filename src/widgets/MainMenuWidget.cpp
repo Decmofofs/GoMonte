@@ -44,7 +44,7 @@ MainMenuWidget::MainMenuWidget(QWidget * parent) : QWidget(parent) {
 
     AI_depth_controller->setValue(MAX_DEPTH);
     AI_time_controller->setValue(MAX_TIME/1000);
-    AI_simulations_controller->setValue(MAX_SIMULATION/300);
+    AI_simulations_controller->setValue(MAX_SIMULATION/3000);
 
     main_layout = new QVBoxLayout(this);
 
@@ -138,8 +138,8 @@ void MainMenuWidget::update_AI_max_time(int time) {
 }
 
 void MainMenuWidget::update_AI_max_simulations(int simulations) {
-    AI_simulations_label->setText("AI 最大模拟次数: \n" + QString::number(simulations*300));
-    MAX_SIMULATION = simulations * 300;
+    AI_simulations_label->setText("AI 最大模拟次数: \n" + QString::number(simulations*3000));
+    MAX_SIMULATION = simulations * 3000;
     emit AI_simulations_changed(simulations);
 }
 

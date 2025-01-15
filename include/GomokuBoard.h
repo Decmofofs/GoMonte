@@ -10,9 +10,7 @@
 #include <utility>
 #include "GameData.h"
 #include <QJsonArray>
-
-
-
+#include <unordered_set>
 
 
 class GomokuBoard {
