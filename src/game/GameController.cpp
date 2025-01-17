@@ -86,7 +86,9 @@ void GameController::process_AI_response(int x, int y) {
 
 void GameController::process_player_move(int x, int y) {
     is_AI_thinking = true;
+    qInfo() << "Forbidden? " << game_board.is_forbidden({x,y,human_player});
     if (game_board.is_forbidden({x,y,human_player})) {
+
         process_forbidden_move(x,y);
         return;
     }
@@ -113,7 +115,8 @@ void GameController::process_player_move(int x, int y) {
 }
 
 void GameController::process_forbidden_move(int x, int y) {
-    // TODO
+    QMessageBox::warning(dynamic_cast<QWidget*>(this->parent()), "禁手", "禁手！请重新落子！");
+    is_AI_thinking = false;
 }
 
 void GameController::receive_best_move(MoveInfo move) {

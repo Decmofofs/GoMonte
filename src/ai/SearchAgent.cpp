@@ -1,11 +1,10 @@
-#include <thread>
-#include <mutex>
+
 #include <vector>
-#include <map>
-#include <utility>
-#include <algorithm> // For std::min, std::max
-#include <iterator>  // For std::advance
-#include <atomic>    // If you want atomic counters, etc.
+
+
+
+
+
 #include "GameData.h"
 #include "SearchAgent.h"
 #include <random>
@@ -16,133 +15,46 @@ inline int random_int(int min_val, int max_val) {
     return dist(engine);
 }
 
-//void SearchAgentWorker::search_best_move(const GomokuBoard &board)
-// {
-//
-//     std::map<std::pair<int, int>, int> move_scores;
-//
-//     std::mutex move_scores_mutex;
-//
-//     const unsigned num_threads = 1;
-//
-//     const int chunk_size = MAX_SIMULATION / num_threads;
-//
-//
-//     auto worker_func = [&](int start, int end)
-//     {
-//         // Local map for this thread
-//         std::map<std::pair<int, int>, int> local_scores;
-//
-//         for (int i = start; i < end; ++i)
-//         {
-//             GomokuBoard sim_board = board;
-//             PlayerOccupy sim_player = AI_player;
-//
-//             int confirm = 0;
-//             std::pair<int, int> move{-1, -1};
-//             auto possible_moves = sim_board.get_legal_moves();
-//             for (int d = 0; d < 60; d++)
-//             {
-//
-//                 if (possible_moves.empty())
-//                     break;
-//
-//                 auto move_it = possible_moves.begin();
-//                 std::advance(move_it, random_int(0, static_cast<int>(possible_moves.size()) - 1));
-//                 move = *move_it;
-//
-//                 sim_board.set(move.first, move.second, sim_player);
-//
-//                 int bx = move.first, by = move.second;
-//                 possible_moves.erase(move_it);
-//                 for (int dx=-2;dx<=2;dx++) {
-//                     for (int dy=-2;dy<=2;dy++) {
-//                         if ((dx+bx)>=0 && (dx+bx) < BOARD_SIZE && (dy+by)>=0 && (dy+by) < BOARD_SIZE) {
-//                             if (sim_board.at(dx+bx, dy+by) == PlayerOccupy::NONE) {
-//                                 possible_moves.insert({dx+bx, dy+by});
-//                             }
-//                         }
-//                     }
-//                 }
-//
-//                 if (sim_board.check_win({ move.first, move.second, human_player }))
-//                 {
-//                     confirm = 1;
-//                     break;
-//                 }
-//                 if (sim_board.check_win({ move.first, move.second, AI_player }))
-//                 {
-//                     confirm = 1;
-//                     break;
-//                 }
-//
-//                 sim_player = (sim_player == PlayerOccupy::BLACK)
-//                            ? PlayerOccupy::WHITE
-//                            : PlayerOccupy::BLACK;
-//             }
-//
-//             if (confirm == 1)
-//             {
-//                 local_scores[move] += 1;
-//             }
-//         }
-//
-//         {
-//             std::lock_guard<std::mutex> lock(move_scores_mutex);
-//             for (auto &kv : local_scores)
-//             {
-//                 move_scores[kv.first] += kv.second;
-//             }
-//         }
-//     };
-//
-//     std::vector<std::thread> threads;
-//     threads.reserve(num_threads);
-//
-//     int start_index = 0;
-//     for (unsigned t = 0; t < 1; ++t)
-//     {
-//         int simulations_for_this_thread = chunk_size;
-//
-//
-//
-//         int end_index = start_index + simulations_for_this_thread;
-//         threads.emplace_back(worker_func, start_index, end_index);
-//
-//         start_index = end_index;
-//     }
-//
-//     for (auto &th : threads)
-//     {
-//         th.join();
-//     }
-//
-//     int best_score = -1;
-//     std::pair<int, int> best_move = { -1, -1 };
-//     for (auto &ele : move_scores)
-//     {
-//         if (ele.second > best_score)
-//         {
-//             best_score = ele.second;
-//             best_move = ele.first;
-//         }
-//     }
-//
-//     emit send_best_move({best_move.first, best_move.second, AI_player});
-// }
+struct PairHash {
+
+    int  operator()(const std::pair<int, int>& p) const {
+        return p.first * 15 + p.second;
+    }
+
+};
+
+
+struct SortScore {
+    bool operator()(const std::pair<std::pair<int, int>, int> &a, const std::pair<std::pair<int, int>, int> &b) {
+        return a.second > b.second;
+    }
+};
 
 void SearchAgentWorker::search_best_move(const GomokuBoard &board)
 {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto end_time = start_time + std::chrono::milliseconds(MAX_TIME-50);
 
     std::map<std::pair<int, int>, int> move_scores;
 
-    for (int i=0; i<MAX_SIMULATION;i++) {
+    int visit[15][15] = {};
+
+    while (true){
+        std::chrono::system_clock::time_point cur_time = std::chrono::high_resolution_clock::now();
+        if (cur_time > end_time) {
+            break;
+        }
+
+        memset(visit,0,sizeof(visit));
+
         GomokuBoard sim_board = board;
         PlayerOccupy sim_player = AI_player;
         std::pair<int,int> move;
         int confirm = 0;
         auto possible_moves_set = sim_board.get_legal_moves();
         std::vector<std::pair<int, int>> possible_moves;
+
+        int forbid_skip = 0;
 
         for (auto x: possible_moves_set) {
             possible_moves.push_back(x);
@@ -157,8 +69,15 @@ void SearchAgentWorker::search_best_move(const GomokuBoard &board)
 
             int rd_index = random_int(0, possible_moves.size()-1);
             move = possible_moves[rd_index];
-            sim_board.set(move.first, move.second, sim_player);
 
+            if (sim_player == PlayerOccupy::BLACK && sim_board.is_forbidden({move.first, move.second, sim_player})) {
+                forbid_skip = 1;
+
+                continue;
+            }
+
+            sim_board.set(move.first, move.second, sim_player);
+            visit[move.first][move.second] = 1;
 
             int bx = move.first, by = move.second;
 
@@ -166,7 +85,7 @@ void SearchAgentWorker::search_best_move(const GomokuBoard &board)
             possible_moves.erase(possible_moves.end()-1);
             for (int dx=-2;dx<=2;dx++) {
                 for (int dy=-2;dy<=2;dy++) {
-                    if ((dx+bx)>=0 && (dx+bx) < BOARD_SIZE && (dy+by)>=0 && (dy+by) < BOARD_SIZE) {
+                    if ((dx+bx)>=0 && (dx+bx) < BOARD_SIZE && (dy+by)>=0 && (dy+by) < BOARD_SIZE && visit[dx+bx][dy+by] == 0) {
                         if (sim_board.at(dx+bx, dy+by) == PlayerOccupy::NONE) {
                             possible_moves.push_back({dx+bx, dy+by});
                         }
@@ -187,22 +106,57 @@ void SearchAgentWorker::search_best_move(const GomokuBoard &board)
 
         }
 
-        if (confirm || move_scores.empty()) {
+        if ( !forbid_skip && (confirm || move_scores.empty())) {
             move_scores[move] += 1;
         }
-
-
 
     }
 
     int best_score = -1;
     std::pair<int, int> best_move;
-    qInfo() << move_scores.size();
+    if (move_scores.empty()) {
+        // Random move
+        auto possible_moves_set = board.get_legal_moves();
+        std::vector<std::pair<int, int>> possible_moves;
+        for (auto x: possible_moves_set) {
+            possible_moves.push_back(x);
+        }
+        if (possible_moves.empty()) {
+            return;
+        }
+        int rd_index = random_int(0, possible_moves.size()-1);
+        best_move = possible_moves[rd_index];
+        emit send_best_move({best_move.first, best_move.second, AI_player});
+        return;
+    }
+
+    if (AI_player == PlayerOccupy::BLACK) {
+        std::vector<std::pair<std::pair<int,int>,int>> move_scores_vec(move_scores.begin(), move_scores.end());
+        std::sort(move_scores_vec.begin(),move_scores_vec.end(),SortScore());
+        for (auto & score : move_scores_vec) {
+            auto cur_move = score.first;
+            if (!board.is_forbidden({cur_move.first,cur_move.second,PlayerOccupy::BLACK})) {
+                emit send_best_move({cur_move.first,cur_move.second,PlayerOccupy::BLACK});
+                return;
+            }
+        }
+
+        auto possible_moves_set = board.get_legal_moves();
+        auto possible_moves = std::vector<std::pair<int, int>>(possible_moves_set.begin(), possible_moves_set.end());
+        auto rand_id = random_int(0, possible_moves.size()-1);
+        best_move = possible_moves[rand_id];
+        emit send_best_move({best_move.first,best_move.second,PlayerOccupy::BLACK});
+        return;
+    }
+
+
     for (auto ele : move_scores) {
         if (ele.second > best_score) {
             best_score = ele.second;
             best_move = ele.first;
         }
     }
+
+
     emit send_best_move({best_move.first, best_move.second, AI_player});
 }

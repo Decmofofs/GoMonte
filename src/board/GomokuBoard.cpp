@@ -103,10 +103,114 @@ int GomokuBoard::is_full() const {
 }
 
 int GomokuBoard::is_forbidden(const MoveInfo move) const {
-    const int x = move.x;
-    const int y = move.y;
-    if (x < 0 || x >= S || y < 0 || y >= S) return 1;
-    return board[x][y] != PlayerOccupy::NONE;
+    if (move.player == PlayerOccupy::WHITE) return 0;
+    int dir[][2] = {{1,0},{0,1},{1,1},{1,-1}};
+    int r = move.x, c = move.y;
+    // 分别统计四个方向的连子数以及活数
+    int alive[4];
+    int cnt[4];
+    for (int i=0;i<4;i++) {
+        cnt[i] = 1;
+        alive[i] = 2;
+        int nr = r + dir[i][0], nc = c + dir[i][1];
+        while (nr>=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == move.player) {
+            cnt[i]++;
+            nr += dir[i][0];
+            nc += dir[i][1];
+        }
+        if (nr >=0 && nr<S && nc>=0 && nc<S && board[nr][nc] != PlayerOccupy::NONE) {
+            alive[i]--;
+        }
+        nr = r - dir[i][0], nc = c - dir[i][1];
+        while (nr>=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == move.player) {
+            cnt[i]++;
+            nr -= dir[i][0];
+            nc -= dir[i][1];
+        }
+        if ((nr >=0 && nr<S && nc>=0 && nc<S && board[nr][nc] != PlayerOccupy::NONE)) {
+            alive[i]--;
+        }
+    }
+    for (int i=0;i<4;i++) {
+        qInfo() << cnt[i] << " " << alive[i] << "dir" << i;
+    }
+    if (*std::max_element(cnt,cnt+4)>5) return 2;
+    int alive_33 = 0;
+    for (int i=0;i<4;i++) {
+        if (alive[i]==2 && cnt[i]==3) {
+            alive_33++;
+        }
+    }
+    if (alive_33>=2) return 1;
+
+    // 考虑跳四
+    int non_jump_4 = 0;
+    for (int i=0;i<4;i++) {
+        if (cnt[i] == 4) {
+            non_jump_4++;
+        }
+    }
+
+    int jump_4 = 0;
+
+
+
+    for (int i=0;i<4;i++) {
+
+        if (cnt[i] >= 4) continue;
+        if (alive[i] == 0) continue;
+
+        int p_x, p_y, m_x, m_y;
+
+        int jump_p = 0;
+        int jump_m = 0;
+        // 寻找连子的两端
+        int nr = r + dir[i][0], nc = c + dir[i][1];
+        while (nr >=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == PlayerOccupy::BLACK) {
+            nr += dir[i][0];
+            nc += dir[i][1];
+        }
+        p_x = nr;
+        p_y = nc;
+
+        nr = r - dir[i][0], nc = c - dir[i][1];
+        while (nr >=0 && nr<S && nc>=0 && nc<S && board[nr][nc] == PlayerOccupy::BLACK) {
+            nr -= dir[i][0];
+            nc -= dir[i][1];
+        }
+        m_x = nr;
+        m_y = nc;
+
+        if (p_x>=0 && p_x<S && p_y>=0 && p_y<S && board[p_x][p_y] == PlayerOccupy::NONE) {
+            p_x += dir[i][0];
+            p_y += dir[i][1];
+            while (p_x >=0 && p_x<S && p_y>=0 && p_y < S && board[p_x][p_y] == PlayerOccupy::BLACK) {
+                jump_p ++;
+                p_x += dir[i][0];
+                p_y += dir[i][1];
+            }
+        }
+
+
+        if (m_x >=0 && m_x < S && m_y >=0 && m_y < S && board[m_x][m_y] == PlayerOccupy::NONE) {
+            m_x -= dir[i][0];
+            m_y -= dir[i][1];
+            while (m_x >=0 && m_x<S && m_y>=0 && m_y < S && board[m_x][m_y] == PlayerOccupy::BLACK) {
+                jump_m ++;
+                m_x -= dir[i][0];
+                m_y -= dir[i][1];
+            }
+        }
+
+        if (cnt[i] + std::max(jump_m, jump_p) >= 4) {
+            jump_4++;
+        }
+
+
+    }
+    if (jump_4 + non_jump_4 >= 2) return 1;
+
+    return 0;
 }
 
 std::set<std::pair<int, int>> GomokuBoard::get_legal_moves() const {
@@ -190,6 +294,7 @@ int GomokuBoard::heuristic_evaluation(PlayerOccupy player) {
     }
 
     return white_score - black_score;
-
 }
+
+
 
